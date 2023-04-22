@@ -1,0 +1,189 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\newcommand{\passthrough}[1]{#1}
+\lstset{defaultdialect=[5.3]Lua}
+\lstset{defaultdialect=[x86masm]Assembler}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+\usepackage[bidi=basic]{babel}
+\else
+\usepackage[bidi=default]{babel}
+\fi
+\babelprovide[main,import]{spanish}
+% get rid of language-specific shorthands (see #6817):
+\let\LanguageShortHands\languageshorthands
+\def\languageshorthands#1{}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codeblue}{rgb}{0,0,0.6}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+backgroundcolor=\color{backcolour},   
+commentstyle=\color{codegreen},
+keywordstyle=\color{magenta},
+numberstyle=\color{codeblue},
+stringstyle=\color{codepurple},
+breakatwhitespace=false,         
+breaklines=true,                 
+captionpos=b,                    
+keepspaces=true,                 
+showspaces=false,                
+showstringspaces=false,
+showtabs=false,                  
+tabsize=2
+}
+
+\lstset{style = mystyle}
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={test},
+  pdfauthor={Maria Lucas},
+  pdflang={Es-es},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{test}
+\author{Maria Lucas}
+\date{2023-04-22}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{4}
+\tableofcontents
+}
+\hypertarget{ejercicio-1}{%
+\section{Ejercicio 1}\label{ejercicio-1}}
+
+Primero, cargamos los datos del documento excel.
+
+\begin{lstlisting}[language=R]
+#install.packages("readxl")
+library("readxl")
+data1 = read_excel("cicindela.xlsx")
+names(data1)[1] <- "BD"
+names(data1)[2] <- "WE"
+names(data1)[3] <- "SPS"
+names(data1)[4] <- "BS"
+names(data1)[5] <- "AD"
+\end{lstlisting}
+
+\hypertarget{ajuste-del-modelo}{%
+\subsubsection{Ajuste del modelo}\label{ajuste-del-modelo}}
+
+LA IA ME DICE QUE CHECKEE LAS ASUNCIONES (lineal, independencia,
+homocedasticidad, N de residuos)
+
+\begin{lstlisting}[language=R]
+# Creación del modelo
+lmod = lm(BD ~ WE + SPS + BS + AD, data = data1)
+sum = summary(lmod)
+# Estadístico anova
+anv = anova(lmod)
+sum
+\end{lstlisting}
+
+\begin{lstlisting}
+## 
+## Call:
+## lm(formula = BD ~ WE + SPS + BS + AD, data = data1)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -6.3004 -2.7038  0.0795  2.6017  5.3924 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)  
+## (Intercept)  14.9531    17.2661   0.866   0.4152  
+## WE            0.9123     1.0935   0.834   0.4317  
+## SPS           3.8970     1.1690   3.334   0.0125 *
+## BS            0.6511     0.4530   1.437   0.1938  
+## AD           -1.5624     0.6610  -2.364   0.0501 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.513 on 7 degrees of freedom
+## Multiple R-squared:  0.9578, Adjusted R-squared:  0.9337 
+## F-statistic: 39.71 on 4 and 7 DF,  p-value: 6.727e-05
+\end{lstlisting}
+
+Como podemos observar mediante la estimación de los coeficientes de
+regresión, la ecuación quedaría como: BD = 14.95 + 0.91WE + 3.89SPS +
+0.65BS - 1.56AD.
+
+El modelo obtenido es significativo, con un pvalor global = 6.727e-05.
+El test estadístico empleado es un F-test, éste testa como H0 que todos
+los coeficientes de regresión son 0, y como H1 que al menos uno es
+distinto de 0.
+
+H0: B1 = B2 = \ldots{} = Bp = 0 (donde B1, B2, \ldots, Bp son los
+coeficientes de regresión de las variables predictoras del modelo) H1:
+al menos un Bi es diferente a 0, donde i = 1, 2, \ldots, p
+
+En este caso al menos una de las variables tiene dependencia lineal con
+la variable respuesta (Beetle Density).
+
+\end{document}

@@ -1,0 +1,78 @@
+---
+title: "test"
+author: "Maria Lucas"
+date: "2023-04-22"
+encoding: UTF-8
+header-includes: 
+  - |
+    \usepackage{listings}
+    \usepackage{xcolor}
+    
+    \definecolor{codegreen}{rgb}{0,0.6,0}
+    \definecolor{codeblue}{rgb}{0,0,0.6}
+    \definecolor{codegray}{rgb}{0.5,0.5,0.5}
+    \definecolor{codepurple}{rgb}{0.58,0,0.82}
+    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+    
+    \lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\color{codeblue},
+    stringstyle=\color{codepurple},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+    }
+    
+    \lstset{style = mystyle}
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 4
+    pandoc_args: --listings
+    keep_tex: true
+lang: Es-es
+---
+
+# Ejercicio 1
+
+Primero, cargamos los datos del documento excel.
+```{r}
+#install.packages("readxl")
+library("readxl")
+data1 = read_excel("cicindela.xlsx")
+names(data1)[1] <- "BD"
+names(data1)[2] <- "WE"
+names(data1)[3] <- "SPS"
+names(data1)[4] <- "BS"
+names(data1)[5] <- "AD"
+
+```
+
+### Ajuste del modelo
+
+LA IA ME DICE QUE CHECKEE LAS ASUNCIONES (lineal, independencia, homocedasticidad, N de residuos)
+
+```{r}
+# Creación del modelo
+lmod = lm(BD ~ WE + SPS + BS + AD, data = data1)
+sum = summary(lmod)
+# Estadístico anova
+anv = anova(lmod)
+sum
+```
+
+Como podemos observar mediante la estimación de los coeficientes de regresión, la ecuación quedaría como: BD = 14.95 + 0.91WE + 3.89SPS + 0.65BS - 1.56AD.
+
+El modelo obtenido es significativo, con un pvalor global = 6.727e-05. El test estadístico empleado es un F-test, éste testa como H0 que todos los coeficientes de regresión son 0, y como H1 que al menos uno es distinto de 0. 
+
+H0: B1 = B2 = ... = Bp = 0 (donde B1, B2, ..., Bp son los coeficientes de regresión de las variables predictoras del modelo)
+H1: al menos un Bi es diferente a 0, donde i = 1, 2, ..., p
+
+En este caso al menos una de las variables tiene dependencia lineal con la variable respuesta (Beetle Density). 
