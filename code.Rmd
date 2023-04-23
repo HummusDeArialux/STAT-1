@@ -63,4 +63,77 @@ library(car)
 vif(lmod)
 ```
 
-El factor de inflación de la varianza o VIF mide cuánto se incrementa la varianza de los coeficientes de regresión estimados a causa de la colinealidad entre las variables predictoras. Valores mayores a 1 indican ligera correlación, que aumenta conforme aumenta el valor VIF. Valores mayores a  
+El factor de inflación de la varianza o VIF mide cuánto se incrementa la varianza de los coeficientes de regresión estimados a causa de la colinealidad entre las variables predictoras. Valores de 1 indican que no hay correlación, valores de 1 a 5 que hay una ligera o moderada correlación, y valores mayores a 5 que las variables están altamente correlacionadas.
+
+En este caso, podemos ver que sobretodo para AD hay una alta correlación y que por lo tanto no nos podemos fiar de la estimación de parámetros y pvalor. 
+
+El umbral del nivel de correlación aceptable entre variables dependerá de cada caso de estudio concreto.
+
+### (d) Modelo reducido
+
+```{r}
+lmod_red= lm(BD ~ SPS + AD, data = data1)
+summary(lmod_red)
+anova(lmod_red, lmod)
+```
+
+- H0: El modelo reducido es igual de bueno que el modelo con más variables. 
+- H1: El modelo con más variables explica mejor los datos.
+
+O si lo escribimos de forma paramétrica:
+
+- H0: RSS_reducido = RSS_completo
+- H1: RSS_reducido > RSS_completo
+
+Cabe destacar que el RSS (Residual Sum of Squares) mide la diferencia entre los valores reales de la variable respuesta y los valores predichos por el modelo. En otras palabras, es una medida de lo bien que se ajusta el modelo a los datos. Mediante la comparación de éste parámetro el F test nos ayuda a determinar si la adición de variables y con ello el aumento de grados de libertad mejoran el ajuste del modelo.
+
+En nuestro caso como el pvalor = 0.35 aceptamos la hipótesis nula, el modelo BD ~ SPS + AD explica igual de bien los datos que el modelo con más variables, al ser más sencillo pero con iguales resultados, lo escogeríamos antes que el modelo más complejo. 
+
+Por otro lado, en el modelo reducido todas las variables explican de manera significa la variable respuesta. Además, el valor de R ajustado es similar en ambos modelos (0.93), este valor indica el porcentaje de la variable respuesta que es explicado por el modelo.
+
+### (e) Gráfico región de confianza
+
+```{r}
+# install.packages('ellipse')
+library(ellipse)
+plot(ellipse(lmod_red, 2:3),type="l", xlim = c(-1, 8), ylim = c(-4, 1))
+points(coef(lmod_red)[2], coef(lmod_red)[3], pch=19)
+points(x=0, y=0, pch=19, col="blue")
+abline(v=confint(lmod_red)[2,],lty=2,col=2)
+abline(h=confint(lmod_red)[3,],lty=2,col=2)
+```
+
+El origen de coordenadas nos indica el resultado del test de Wald bajo las siguientes hipótesis:
+
+- H0: $\beta1 = \beta2 = 0$. Los coeficientes de ambas variables son 0
+- H1: $\beta1\neq0$ y/o $\beta2\neq0$. Caso contrario, al menos uno de los coeficientes es 0
+
+Cuando la elipse de confianza incluye el (0,0) indica que los coeficientes estimados no son distintos que 0 y que por lo tanto las variables predictoras no aportan al modelo. Por otro lado, si no lo incluye significa que los coeficientes son distintos a 0 y las variables sí explican la variable respuesta. En este caso al no incluirlo, podemos deducir que las variables SPS y AD sí explican la variable BD.
+
+### (f) Predicción 
+
+```{r}
+new_ob = data.frame(SPS = 5, AD = 11)
+pred <- predict(lmod_red, new_ob, interval = "confidence", level = 0.95)
+cat("Predicted value:", pred[1], "\n")
+cat("95% confidence interval:", pred[2], "-", pred[3])
+```
+
+```{r}
+#install.packages('regclass')
+library(regclass)
+extrapolation_check(lmod_red,new_ob)
+```
+
+```{r}
+# create a scatter plot of SPS and AD
+plot(SPS ~ AD, data = data1)
+
+# add the observed values as points on the plot
+points(x = 11, y = 5, col = "red", pch = 19)
+
+# add a legend to the plot
+legend("topright", legend = c("Observed values"), col = c("red"), pch = 19)
+```
+
+En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar extrapolación, en nuestro caso obtenemos un percentil de 25 indicando que seguramente no la haya. Si revisamos el scatterplot podemos ver que estos valores de SPS y AD entran dentro del scope del modelo.
