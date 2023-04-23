@@ -18,7 +18,6 @@ names(data1)[2] <- "WE"
 names(data1)[3] <- "SPS"
 names(data1)[4] <- "BS"
 names(data1)[5] <- "AD"
-
 ```
 
 ### (a) Ajuste del modelo
@@ -103,6 +102,8 @@ abline(v=confint(lmod_red)[2,],lty=2,col=2)
 abline(h=confint(lmod_red)[3,],lty=2,col=2)
 ```
 
+
+
 El origen de coordenadas nos indica el resultado del test de Wald bajo las siguientes hipótesis:
 
 - H0: $\beta1 = \beta2 = 0$. Los coeficientes de ambas variables son 0
@@ -137,3 +138,36 @@ legend("topright", legend = c("Observed values"), col = c("red"), pch = 19)
 ```
 
 En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar extrapolación, en nuestro caso obtenemos un percentil de 25 indicando que seguramente no la haya. Si revisamos el scatterplot podemos ver que estos valores de SPS y AD entran dentro del scope del modelo.
+
+# Ejercicio 2
+
+### Gráfico de dispersión
+
+```{r}
+#install.packages("readxl")
+library("readxl")
+data2 = read.csv("lions.csv")
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+p = ggplot(data2, aes(age, prop.black))
+p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(area == "N", "Ngorongoro", "Serengeti")))) + 
+  scale_shape_manual(name = "", 
+                     values = c(1, 19, 2, 17), 
+                     labels = data2 %>%
+                       group_by(sex, area) %>%
+                       summarize(n = n()) %>%
+                       mutate(label = paste0(ifelse(area == "N", "Ngorongoro", "Serengeti"), " ", ifelse(sex == "M", "males", "females"), "(n = ", n, ")")) %>%
+                       pull(label)) +
+  labs(x = "Age (yr)", y = "Proportion black", shape = "") +
+  scale_x_continuous(breaks = seq(0, 16, 2), limits = c(0, 16)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1)) +
+  scale_fill_discrete(breaks=c('F', 'M')) +
+  theme_classic() +
+  theme(aspect.ratio = 0.5, legend.position = c(0.75, 0.3))
+```
+
+### Gráfico de dispersión
