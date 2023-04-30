@@ -2,7 +2,11 @@
 title: "PAC 1 Regresión Lineal"
 author: "Maria Lucas"
 date: "2023-04-22"
-output: pdf_document
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 4
+lang: Es-es
 ---
 \newpage
 
@@ -141,7 +145,7 @@ En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar ext
 
 # Ejercicio 2
 
-### Gráfico de dispersión
+### (a) Gráfico de dispersión
 
 ```{r}
 #install.packages("readxl")
@@ -170,4 +174,113 @@ p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(
   theme(aspect.ratio = 0.5, legend.position = c(0.75, 0.3))
 ```
 
-### Gráfico de dispersión
+### (b) Modelos según área
+
+```{r}
+lmod_all = lm(prop.black ~ age + sex + area, data = data2)
+summary(lmod_all)
+
+data2_split_area = split(data2, f=data2$area)
+
+lmod_N = lm(prop.black ~ age + sex, data = data2_split_area$N)
+lmod_S = lm(prop.black ~ age + sex, data = data2_split_area$S)
+summary(lmod_N)
+summary(lmod_S)
+
+```
+
+En el modelo con todas las posibles variables y sin contrastar si existe interacción entre las variables, podemos observar que el sexo influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.0279.
+
+Al separar por área, obtenemos los mismos resultados que en el artículo, en el que en la población Ngorongoroel sexo influye significativamente en la variable respuesta (pv = 0.04), mientras que en los Serengeti no influye (pv = 0.4). Podemos deducir que en el caso de los machos tienen una nariz más clara por el coeficiente estimado que es negativo (-0.16), es decir que el ser macho se relaciona significativamente con tener la nariz más clara.
+
+### (c) Modelo leones macho
+
+```{r}
+data2_split_sex = split(data2, f = data2$sex)
+lmod_male = lm(prop.black ~ age + area, data = data2_split_sex$M)
+summary(lmod_male)
+```
+
+Confirmamos que para los machos existen diferencias significativas según el área (pv = 0.03), teniendo los Serengeti una nariz más oscura que los Ngorongoro (coef = 0.14).
+
+```{r}
+# Fit a linear regression model with an interaction term
+lmod_male_interaction <- lm(prop.black ~ age * area, data = data2_split_sex$M)
+
+# Create a sequence of ages to use for plotting
+age_seq <- seq(min(data2_split_sex$M$age), max(data2_split_sex$M$age), length.out = 100)
+
+# Predict proportion black for each area at each age
+pred_N <- predict(lmod_male_interaction, newdata = data.frame(age = age_seq, area = "N"))
+pred_S <- predict(lmod_male_interaction, newdata = data.frame(age = age_seq, area = "S"))
+
+# Plot regression lines for each area
+plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black")
+lines(age_seq, pred_N, col = "red")
+lines(age_seq, pred_S, col = "blue")
+legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
+```
+
+Cabe destacar que para dibujar la regresión por áreas, hemos ajustado un modelo dónde se permite la interacción entre la edad y el área para permitir que la pendiente de regresión cambie según el área.
+
+### (d) Predicción de la edad de una leona
+
+No, ninguno de los modelos ajustados hasta el momento serviría para predecir la edad de una leona según su proporción de pigmentación. Hasta ahora hemos usado la pigmentación de la nariz como variable respuesta, que era explicada por la edad, área y sexo del león. No es posible simplemente "revertir" el modelo, necesitaríamos estimar un nuevo modelo dónde la variable respuesta fuera la edad, y la variable predictora fuera el color de la nariz.
+
+El modelo que proponen en el artículo, utilizan la función arcsin para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico. Con esta transformación, los valores medios de proporción siguen una distribución normal, gracias a esto se puede realizar una regresión lineal. Se define de la siguiente manera: arcsin(x) = arcsin(x) = sin^(-1)(x). Cabe destacar que no aplicamos una transformación sqrt porque nuestros datos sabemos que estan seguro entre 0 y 1, por lo tanto no se requiere esta transformación. 
+
+```{r}
+library(stats)
+
+# Aplicamos la transformación sólo a 
+data2_split_sex$F$prop.black.transformed = asin(data2_split_sex$F$prop.black)
+
+lmod_age = lm(age ~ prop.black.transformed, data = data2_split_sex$F)
+
+# Compute the predicted age on the transformed scale
+
+# Define the proportion black for which to make the prediction
+prop_black = 0.5
+prop_black_transformed <- asin(prop_black)
+
+# Compute the predicted age and confidence intervals
+predicted_age <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed))
+ci_95 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.95)
+ci_75 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.75)
+ci_50 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.50)
+
+# Compute se
+summary_lmod_age <- summary(lmod_age)
+se_predicted_age <- summary_lmod_age$sigma * sqrt(1 + 1/nrow(data2_split_sex$F) + (prop_black_transformed - mean(data2_split_sex$F$prop.black.transformed))^2/var(data2_split_sex$F$prop.black.transformed))
+
+# Create a data frame with the predicted age and confidence intervals
+result_table <- data.frame("Proportion black" = prop_black, 
+                           "Estimated age in years" =paste(round(predicted_age,2), "(", round(se_predicted_age,2), ")"),
+                           "95% CI" = paste(round(ci_95[2],2), round(ci_95[3],2), sep = "-"),
+                           "75% CI" = paste(round(ci_75[2],2), round(ci_75[3],2), sep = "-"),
+                           "50% CI" = paste(round(ci_50[2],2), round(ci_50[3],2), sep = "-"))
+
+library(knitr)
+
+new_names = c("Proportion black", "Estimated age in years (s.e.)", "95% p.i.", "75% p.i.", "50% p.i.")
+
+names(result_table) <- new_names
+
+# Create a table using the kable function from the knitr package
+kable(result_table, format = "markdown")
+
+```
+
+Se o standard error es una medida de la variabilidad de los errores de predicción de la variable dependiente a partir de las variables independientes. Se calcula como la desviación estándar de los residuos de la regresión (diferencias entre los valores predichos y los valores observados) dividida por la raíz cuadrada del número de observaciones.En resumen, el error estándar indica la precisión de las predicciones de la variable dependiente y es una medida importante para evaluar la calidad de un modelo de regresión lineal. Un error estándar más bajo indica una mayor precisión en las predicciones del modelo.
+
+# Ejercicio 3
+
+### (a) Gauss-Markov y normaliada de residuos
+
+### (b) Variable respuesta proporción
+
+### (c) Transformación de la variable
+
+### (d) Ajuste modelo transformado
+
+### (e) Discusión uso arcsin
