@@ -26,8 +26,6 @@ names(data1)[5] <- "AD"
 
 ### (a) Ajuste del modelo
 
-LA IA ME DICE QUE CHECKEE LAS ASUNCIONES (lineal, independencia, homocedasticidad, N de residuos)
-
 ```{r}
 # Creación del modelo
 lmod = lm(BD ~ WE + SPS + BS + AD, data = data1)
@@ -57,7 +55,7 @@ confint(lmod, "AD", level = 0.9)
 
 En ninguno de los dos intervalos se incluye el 0, es por ello que podemos deducir que el pvalor sea significativo a un nivel de confianza de 0.1 y 0.05, ya que como hemos explicado medimos si el parámetro es distinto a 0. 
 
-El coeficiente de regresión representa el cambio de la variable respuesta (BD o Beetle Density) por cada unidad que aumenta la variable predictora AD. Si este valor es 0 significa que la variable respuesta no varia conforme cambia el valor de la variable predictora. Si el valor es positivo un incremento de AD supone un incremento de BD, y si el valor es negativo un incremento de AD supone una reducción de BD.
+El coeficiente de regresión ($=\beta4$) representa el cambio de la variable respuesta (BD o Beetle Density) por cada unidad que aumenta la variable predictora AD. Si este valor es 0 significa que la variable respuesta no varia conforme cambia el valor de la variable predictora. Si el valor es positivo un incremento de AD supone un incremento de BD, y si el valor es negativo un incremento de AD supone una reducción de BD.
 
 ### (c) Multicolinealidad
 
@@ -106,28 +104,28 @@ abline(v=confint(lmod_red)[2,],lty=2,col=2)
 abline(h=confint(lmod_red)[3,],lty=2,col=2)
 ```
 
-
-
 El origen de coordenadas nos indica el resultado del test de Wald bajo las siguientes hipótesis:
 
 - H0: $\beta1 = \beta2 = 0$. Los coeficientes de ambas variables son 0
 - H1: $\beta1\neq0$ y/o $\beta2\neq0$. Caso contrario, al menos uno de los coeficientes es 0
 
-Cuando la elipse de confianza incluye el (0,0) indica que los coeficientes estimados no son distintos que 0 y que por lo tanto las variables predictoras no aportan al modelo. Por otro lado, si no lo incluye significa que los coeficientes son distintos a 0 y las variables sí explican la variable respuesta. En este caso al no incluirlo, podemos deducir que las variables SPS y AD sí explican la variable BD.
+Si la elipse de confianza no incluye el (0,0), esto sugiere que los coeficientes son distintos a 0 de forma estadísticamente significativa. Esto sugiere que las variables predictoras usadas para construir la elipse, tienen un efecto sobre la variable respuesta. Por otro lado, si no se incluye, indica que los coeficientes estimados no son distintos que 0 y que por lo tanto las variables predictoras no aportan al modelo. Esto no es necesariamente cierto, ya que existen múltiples motivos por los cuales la elipse incluiría el (0,0), como por ejemplo, que el modelo no sea lineal, y por lo tanto no veamos relación.
+
+En este caso al no incluirlo, podemos deducir que las variables SPS y AD sí explican la variable BD.
 
 ### (f) Predicción 
 
 ```{r}
 new_ob = data.frame(SPS = 5, AD = 11)
-pred <- predict(lmod_red, new_ob, interval = "confidence", level = 0.95)
-cat("Predicted value:", pred[1], "\n")
-cat("95% confidence interval:", pred[2], "-", pred[3])
-```
-
-```{r}
 #install.packages('regclass')
 library(regclass)
 extrapolation_check(lmod_red,new_ob)
+# Alternativamente
+range_SPS = range(data1$SPS)
+range_AD = range(data1$AD)
+cat("Min AD:", range_AD[1], " Max AD:", range_AD[2], " Observed value:", new_ob$AD)
+cat("\n")
+cat("Min SPS:", range_SPS[1], " Max SPS:", range_SPS[2], " Observed value:", new_ob$SPS)
 ```
 
 ```{r}
@@ -141,7 +139,13 @@ points(x = 11, y = 5, col = "red", pch = 19)
 legend("topright", legend = c("Observed values"), col = c("red"), pch = 19)
 ```
 
-En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar extrapolación, en nuestro caso obtenemos un percentil de 25 indicando que seguramente no la haya. Si revisamos el scatterplot podemos ver que estos valores de SPS y AD entran dentro del scope del modelo.
+En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar extrapolación, en nuestro caso obtenemos un percentil de 25 indicando que seguramente no la haya. Si revisamos el scatterplot podemos ver que estos valores de SPS y AD entran dentro del scope del modelo. Usando la función range también podemos determinarlo, ya que nos indica el mínimo y el máximo de las variables señaladas. Si nuestra observación cae en ese rango no es una extrapolación.
+
+```{r}
+pred <- predict(lmod_red, new_ob, interval = "confidence", level = 0.95)
+cat("Predicted value:", pred[1], "\n")
+cat("95% confidence interval:", pred[2], "-", pred[3])
+```
 
 # Ejercicio 2
 
