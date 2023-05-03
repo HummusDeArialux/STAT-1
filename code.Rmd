@@ -225,19 +225,31 @@ lines(age_seq, pred_S, col = "blue")
 legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
 ```
 
-Cabe destacar que para dibujar la regresión por áreas, hemos ajustado un modelo dónde se permite la interacción entre la edad y el área para permitir que la pendiente de regresión cambie según el área.
+Cabe destacar que para dibujar la regresión por áreas, hemos ajustado un modelo dónde se permite la interacción entre la edad y el área para permitir que la pendiente de regresión cambie según el área. Si no lo hicieramos, las líneas aparecerían como paralelas tal que así:
+
+```{r}
+# Predict proportion black for each area at each age
+pred_N_noi <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "N"))
+pred_S_noi <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "S"))
+
+# Plot regression lines for each area
+plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black")
+lines(age_seq, pred_N_noi, col = "red")
+lines(age_seq, pred_S_noi, col = "blue")
+legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
+```
 
 ### (d) Predicción de la edad de una leona
 
 No, ninguno de los modelos ajustados hasta el momento serviría para predecir la edad de una leona según su proporción de pigmentación. Hasta ahora hemos usado la pigmentación de la nariz como variable respuesta, que era explicada por la edad, área y sexo del león. No es posible simplemente "revertir" el modelo, necesitaríamos estimar un nuevo modelo dónde la variable respuesta fuera la edad, y la variable predictora fuera el color de la nariz.
 
-El modelo que proponen en el artículo, utilizan la función arcsin para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico. Con esta transformación, los valores medios de proporción siguen una distribución normal, gracias a esto se puede realizar una regresión lineal. Se define de la siguiente manera: arcsin(x) = arcsin(x) = sin^(-1)(x). Cabe destacar que no aplicamos una transformación sqrt porque nuestros datos sabemos que estan seguro entre 0 y 1, por lo tanto no se requiere esta transformación. 
+El modelo que proponen en el artículo, utilizan la función arcsin(sqrt) para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico.
 
 ```{r}
 library(stats)
 
 # Aplicamos la transformación sólo a 
-data2_split_sex$F$prop.black.transformed = asin(data2_split_sex$F$prop.black)
+data2_split_sex$F$prop.black.transformed = asin(sqrt(data2_split_sex$F$prop.black))
 
 lmod_age = lm(age ~ prop.black.transformed, data = data2_split_sex$F)
 
@@ -245,7 +257,7 @@ lmod_age = lm(age ~ prop.black.transformed, data = data2_split_sex$F)
 
 # Define the proportion black for which to make the prediction
 prop_black = 0.5
-prop_black_transformed <- asin(prop_black)
+prop_black_transformed <- asin(sqrt(prop_black))
 
 # Compute the predicted age and confidence intervals
 predicted_age <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed))
@@ -279,12 +291,167 @@ Se o standard error es una medida de la variabilidad de los errores de predicci�
 
 # Ejercicio 3
 
-### (a) Gauss-Markov y normaliada de residuos
+### (a) Gauss-Markov y condiciones del modelo re regresión
 
+Las hipótesis de Gauss-Markov son:
+
+- Linealidad: La relación entre la variable dependiente y las independientes debe ser lineal.
+- Independencia de errores
+- Homocedasticidad: La variancia de los errores o residuos debe ser constante entre todas las variables.
+- Normalidad de errores
+- No correlación de las variables independientes
+- Media condicional de 0: El valor esperado de los errores debe ser 0 para todas las variables independientes
+
+#### Linealidad
+
+```{r}
+# Load required packages
+library(ggplot2)
+
+# Residuals vs. Fitted plot
+plot(lmod_all, which = 1)
+
+# Create dummy variables for sex and area
+dummy_sex <- model.matrix(~ sex, data = data2)
+dummy_area <- model.matrix(~ area, data = data2)
+
+data2 = cbind(data2, dummy_sex)
+data2 = cbind(data2, dummy_area)
+
+# Add quadratic terms for age, sex, and area to lmod_all
+lmod_quad <- lm(prop.black ~ age + I(age^2) + dummy_sex[, 2] + I(dummy_sex[, 2]^2) + dummy_area[, 2] + I(dummy_area[, 2]^2), data = data2)
+
+# Perform an F-test to compare lmod_all and lmod_quad
+anova(lmod_all, lmod_quad)
+```
+
+Observando el gráfico, vemos que no se acaba de cumplir linealidad. Es normal en modelos cuya variable dependiente es una proporción que sigan un patrón sigmoideo, tal y como observamos en el gráfico. Para acabar de testear linealidad, creamos un modelo añadiendo las variables cuadráticos y realizamos una comparación entre modelos. Como el pvalor de la anova es significativo (pv<0.05), determinamos que la transformación cuadrática mejora el modelo, y por tanto hay evidencia de no-linealidad.
+
+Nota: Al tener variables factoriales (área y sexo) hemos realizado un previo dummy coding a la generación del modelo cuadrático.  
+
+#### Normalidad
+
+```{r}
+# Normality of residuals
+qqnorm(resid(lmod_all))
+qqline(resid(lmod_all))
+# H0: follows normality H1: does not follow normality
+shapiro.test(resid(lmod_all))
+```
+
+Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.7) y en el gráfico los valores siguen que manera casi perfecta la línea recta.
+
+#### Homocedasticidad
+
+```{r}
+# Scale-Location plot
+plot(lmod_all, which = 3)
+
+# Load required package
+library(lmtest)
+# Perform Breusch-Pagan test
+bptest(lmod_all)
+
+summary(lm(sqrt(abs(residuals(lmod_all))) ~ fitted(lmod_all)))
+```
+
+Parece ser que el modelo no cumple homocedasticidad. En el gráfico podemos ver como los valores no acaban de tener una forma rectangular, ya que aumenta su dispersión a medida que aumenta el valor ajustado, dando una ligera forma de cono.
+
+Por otro lado el test de Breusch-Pagan también nos indica que hay heterocedasticidad, ya que con pv = 0.01 aceptamos la hipótesis alternativa: la varianza de los residuos no es constante.
+
+Adicionalmente, en el resumen del modelo ajustado a la raíz cuadrada de los residuos absolutos, observamos un pvalor significativo (pv = 0.01). Esto sugiere que su relación no es aleatoria, y por lo tanto, el modelo original viola homocedasticidad.
+
+#### Independencia de errores
+
+```{r}
+# Load the lmtest package
+library(lmtest)
+
+# Perform the Durbin-Watson test on lmod_all
+#H0: No hay autocorrelación H1: Hay correlación
+dwtest(lmod_all)
+
+# Load the graphics package
+library(graphics)
+
+# Create a lag plot of the residuals from lmod_all
+lag.plot(resid(lmod_all))
+```
+
+Según el test de Durbin-Watson, hay evidencia de correlación de residuos (pv < 0.05). Si miramos el gráfico, también determinados que existe correlación de residuos, pues los puntos no se reparten equitativamente sobre la línea horizontal y=0. 
+
+#### Correlación de variables
+
+```{r}
+library(ggcorrplot)
+
+# Compute correlation matrix of independent variables
+cor_mat <- cor(data2[, c("age", "sexM", "areaS")])
+
+# Create correlation plot
+ggcorrplot(cor_mat, hc.order = TRUE, type = "lower", lab = TRUE)
+
+# Compute correlation and p-value between age and dummy_sex
+cor.test(data2$age, data2$sexM)
+
+# Compute correlation and p-value between age and dummy_area
+cor.test(data2$age, data2$areaS)
+
+# Compute correlation and p-value between dummy_sex and dummy_area
+cor.test(data2$areaS, data2$sexM)
+
+```
+
+Existe correlación entre las variables sexo y edad. Parece ser que los machos tienen menor edad que las hembras (-0.26), y esta relación es significativa (pv = 0.007). El resto de variables no parecen estar correlacionadas.
+
+#### Media condicional de 0
+
+```{r}
+# H0: Intercept pv = 0 H1: Distinto de 0
+summary(lmod_all)
+```
+
+Podemos ver que el pvalor del intercepto no es significativo, y por tanto aceptamos la hipótesis nula de que la media condicional de los errores es 0. 
+Es importante que la media condicional sea 0, ya que si no el modelo sobreestimaría o subestimaría los valores reales de la población, llevando así a predicciones sesgados. 
+
+#### Observaciones inusuales
+
+```{r}
+# Leverage
+hatv = hatvalues(lmod_all)
+head(hatv)
+sum(hatv)
+
+halfnorm(hatv, ylab="Leverages")
+
+# Observaciones influenciales
+# Residuals vs. Leverage plot
+plot(lmod_all, which = 5)
+```
+
+En cuanto al leverage, 
 ### (b) Variable respuesta proporción
+
+El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten heterocedasticidad y normalidad de errores.
+
+Para mejorar el ajuste de los datos existen múltiples opciones. Se puede realizar una regresión beta o regresión de respuesta fraccional. En la regresión beta los valores predichos se encuentran entre 0 y 1 (no incluidos). 
+
+https://raymondltremblay.github.io/ANALITICA/TF7_Regresion_beta.html
+
+Otra aproximación que se puede realizar, es una transformación de los datos. Se pueden realizar ciertas transformaciones (como hacer la raíz cuadrada), para que los datos se alejen de los extremos (0 y 1). Con valores entre 0.2 y 0.8 nuestro modelo no llegará a predecir valores fuera del rango entre 0 y 1.
+
+En este caso en particular, se puede aplicar esta transformación aplicando la raíz cuadrada. Por otro lado, se podría medir la cantidad de negro en la nariz de los leones por milímetro cuadrado, y así esta variable dejaría de ser una proporción y no presentaría estos problemas. 
 
 ### (c) Transformación de la variable
 
 ### (d) Ajuste modelo transformado
 
 ### (e) Discusión uso arcsin
+
+Tal y como comentamos en el apartado 2d, el modelo que proponen en el artículo utiliza la función arcsin(sqrt) para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico. Con esta transformación, los valores medios de proporción (0.3-0.7) siguen una distribución normal, gracias a esto se puede realizar una regresión lineal. 
+
+Se define de la siguiente manera: arcsin(x) = sin^(-1)(x). La transformación sqrt hace que los valores más extremos (cercanos a 0 y 1), se desplacen hacia el centro, ayudando así a que caigan en la zona de máxima linealidad.
+
+![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_YHMpOEbHLE.png){width=60%}
+
+# ANEXO
