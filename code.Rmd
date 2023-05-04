@@ -193,6 +193,14 @@ summary(lmod_S)
 
 ```
 
+```{r}
+lmod_all = lm(prop.black ~ age + sex + area, data = data2)
+summary(lmod_all)
+
+lmod_all2 = lm(prop.black ~ age * (sex + area), data = data2)
+summary(lmod_all2)
+```
+
 En el modelo con todas las posibles variables y sin contrastar si existe interacción entre las variables, podemos observar que el sexo influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.0279.
 
 Al separar por área, obtenemos los mismos resultados que en el artículo, en el que en la población Ngorongoroel sexo influye significativamente en la variable respuesta (pv = 0.04), mientras que en los Serengeti no influye (pv = 0.4). Podemos deducir que en el caso de los machos tienen una nariz más clara por el coeficiente estimado que es negativo (-0.16), es decir que el ser macho se relaciona significativamente con tener la nariz más clara.
@@ -418,18 +426,54 @@ Es importante que la media condicional sea 0, ya que si no el modelo sobreestima
 
 ```{r}
 # Leverage
-hatv = hatvalues(lmod_all)
-head(hatv)
-sum(hatv)
 
-halfnorm(hatv, ylab="Leverages")
+# Calculate the threshold based on the rule of thumb
+p <- ncol(model.matrix(lmod_all)) - 1
+n <- nrow(data2)
+threshold <- 2*p/n
 
-# Observaciones influenciales
-# Residuals vs. Leverage plot
-plot(lmod_all, which = 5)
+# Calculate the number of observations with hat values above the threshold
+hatv <- hatvalues(lmod_all)
+num_outliers <- sum(hatv > threshold)
+
+# Print the number of outliers
+cat("Number of outliers according to hatvalues:", num_outliers)
+
+# Half normal plot with hatvalues
+library(faraway)
+halfnorm(hatv, ylab="Hatvalues")
+
+# Half normal plot with cook's distance
+cook = cooks.distance(lmod_all)
+halfnorm(cook, ylab="Cook's distances")
 ```
 
-En cuanto al leverage, 
+En estadística, un punto influyente es un punto que tiene un gran efecto en la estimación de los coeficientes de regresión de un modelo. Vemos que en este estudio existen múltiples puntos influyentes con valores atípicos de las variables dependientes (90, 93, 30...). Si usamos la regla general de 2p/n (siendo p el número de variables independientes del modelo y n el tamaño muestral), obtenemos 25 puntos Mirando el gráfico Half-normal de hatvalues, podemos ver que efectivamente son 25 los puntos que se desvían de la recta principal.Un número tan elevado de puntos influyentes puede significar que el modelo no se ajusta bien a los datos.
+
+Por otro lado, calculamos la distancia de cook para cada uno de los puntos. Mientras que el hatvalue mide cuán desviado está un punto del centro de los datos en cuanto a variables dependientes, la distancia de cook mide el efecto que tendría eliminar el punto en el modelo. En este nuevo gráfico, no parece que los 25 puntos influyentes influyan por igua al modelo, son aproximadamente 10 los que más influyen.
+
+```{r}
+# Outliers
+
+stud = rstudent(lmod_all)
+maxo = stud[which.max(abs(stud))]
+# Calculate Bonferroni critical value
+bonf_crit <- qt(0.05/(2*n), df = lmod_all$df.residual)
+
+cat("\n")
+
+if (maxo > abs(bonf_crit)) {
+  cat("The point is an outlier")
+} else {
+  cat("The point is not an outlier")
+}
+
+```
+
+En estadística, un outlier es un punto significativamente distinto al resto. En este estudio parece que no tenemos outliers. Un punto influyente no tiene porque ser un outlier y un outlier no tiene porque ser un punto influyente. En el artículo original contaban con algún outlier que fue eliminado, como nuestros datos están extrapolados del artículo no contienen outliers.
+
+#### Conclusión
+
 ### (b) Variable respuesta proporción
 
 El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten heterocedasticidad y normalidad de errores.
