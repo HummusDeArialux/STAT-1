@@ -53,7 +53,7 @@ confint(lmod, "AD", level = 0.95)
 confint(lmod, "AD", level = 0.9)
 ```
 
-En ninguno de los dos intervalos se incluye el 0, es por ello que podemos deducir que el pvalor sea significativo a un nivel de confianza de 0.1 y 0.05, ya que como hemos explicado medimos si el parámetro es distinto a 0. 
+En el intervalo al 90% de confianza no se incluye el 0, es por ello que podemos deducir que el pvalor sea significativo a un nivel de confianza de 0.1, ya que como hemos explicado medimos si el parámetro es distinto a 0. En el caso del intervalo de confianza al 95% sí lo incluye por un margen muy pequeño. 
 
 El coeficiente de regresión ($=\beta4$) representa el cambio de la variable respuesta (BD o Beetle Density) por cada unidad que aumenta la variable predictora AD. Si este valor es 0 significa que la variable respuesta no varia conforme cambia el valor de la variable predictora. Si el valor es positivo un incremento de AD supone un incremento de BD, y si el valor es negativo un incremento de AD supone una reducción de BD.
 
@@ -181,69 +181,46 @@ p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(
 ### (b) Modelos según área
 
 ```{r}
-lmod_all = lm(prop.black ~ age + sex + area, data = data2)
+lmod_all = lm(prop.black ~ age * (sex + area), data = data2)
 summary(lmod_all)
 
 data2_split_area = split(data2, f=data2$area)
 
-lmod_N = lm(prop.black ~ age + sex, data = data2_split_area$N)
-lmod_S = lm(prop.black ~ age + sex, data = data2_split_area$S)
+lmod_N = lm(prop.black ~ age * sex, data = data2_split_area$N)
+lmod_S = lm(prop.black ~ age * sex, data = data2_split_area$S)
 summary(lmod_N)
 summary(lmod_S)
 
 ```
 
-```{r}
-lmod_all = lm(prop.black ~ age + sex + area, data = data2)
-summary(lmod_all)
+En el modelo con todas las variable, podemos observar que el sexo no influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.93.
 
-lmod_all2 = lm(prop.black ~ age * (sex + area), data = data2)
-summary(lmod_all2)
-```
+Al separar por área, seguimos obteniendo que el sexo no influye de forma significativa para ninguna de las dos áreas, al menos para un nivel de significación del 0.05. Si tomamos un nivel de 0.1, entonces en ambos el sexo pasa a ser significativo. En la población Ngorongoro los machos tienen la nariz más oscura que las hembras (coef sexM = 0.35), mientras que en los Serengeti los machos tienen la nariz más clara (coef sexM = -0.13). 
 
-En el modelo con todas las posibles variables y sin contrastar si existe interacción entre las variables, podemos observar que el sexo influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.0279.
-
-Al separar por área, obtenemos los mismos resultados que en el artículo, en el que en la población Ngorongoroel sexo influye significativamente en la variable respuesta (pv = 0.04), mientras que en los Serengeti no influye (pv = 0.4). Podemos deducir que en el caso de los machos tienen una nariz más clara por el coeficiente estimado que es negativo (-0.16), es decir que el ser macho se relaciona significativamente con tener la nariz más clara.
+Es importante estudiar la interacción entre la edad y el sexo. En el caso de los Serengeti ésta no es significativa. Y por lo tanto, los resultados se alinean con los del artículo (no hay efecto del sexo en el color de la nariz de los leones Serengeti). En cambio, en el caso de los Ngorongoro sí lo es (pv = 0.01), esto quiere decir que según la edad de los leones, sí observamos diferencias en cuanto al sexo y el color de la nariz. Nuevamente los hallazgos coindicen con los del artículo, pues los machos Ngorongoro tienen narices más claras que las hembras a ciertas edades (coef age:sexM = -0.1)
 
 ### (c) Modelo leones macho
 
 ```{r}
 data2_split_sex = split(data2, f = data2$sex)
-lmod_male = lm(prop.black ~ age + area, data = data2_split_sex$M)
+lmod_male = lm(prop.black ~ age * area, data = data2_split_sex$M)
 summary(lmod_male)
 ```
 
-Confirmamos que para los machos existen diferencias significativas según el área (pv = 0.03), teniendo los Serengeti una nariz más oscura que los Ngorongoro (coef = 0.14).
+Para los machos, no existen diferencias significativas según el área (pv = 0.49). Similarmente al apartado anterior, sí existe significación en la interacción de la edad y el área (pv = 0.03). Esto quiere decir, que según la edad del león sí encontraremos diferencias por área. En específico, los machos Serengeti tienen la nariz más oscura que los Ngorongoro (coef age:areaS = 0.04). Podemos ver este efecto más claramente en el siguiente gráfico. Para un león de 2 años no existen diferencias según el área, pero para un león de 8 años sí lo hay, siendo más oscura la de los Serengeti (mayor proporción de negro).
 
 ```{r}
-# Fit a linear regression model with an interaction term
-lmod_male_interaction <- lm(prop.black ~ age * area, data = data2_split_sex$M)
-
 # Create a sequence of ages to use for plotting
 age_seq <- seq(min(data2_split_sex$M$age), max(data2_split_sex$M$age), length.out = 100)
 
 # Predict proportion black for each area at each age
-pred_N <- predict(lmod_male_interaction, newdata = data.frame(age = age_seq, area = "N"))
-pred_S <- predict(lmod_male_interaction, newdata = data.frame(age = age_seq, area = "S"))
+pred_N <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "N"))
+pred_S <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "S"))
 
 # Plot regression lines for each area
 plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black")
 lines(age_seq, pred_N, col = "red")
 lines(age_seq, pred_S, col = "blue")
-legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
-```
-
-Cabe destacar que para dibujar la regresión por áreas, hemos ajustado un modelo dónde se permite la interacción entre la edad y el área para permitir que la pendiente de regresión cambie según el área. Si no lo hicieramos, las líneas aparecerían como paralelas tal que así:
-
-```{r}
-# Predict proportion black for each area at each age
-pred_N_noi <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "N"))
-pred_S_noi <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "S"))
-
-# Plot regression lines for each area
-plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black")
-lines(age_seq, pred_N_noi, col = "red")
-lines(age_seq, pred_S_noi, col = "blue")
 legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
 ```
 
