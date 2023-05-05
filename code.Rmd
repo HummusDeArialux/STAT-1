@@ -3,7 +3,7 @@ title: "PAC 1 Regresión Lineal"
 author: "Maria Lucas"
 date: "2023-04-22"
 output: 
-  pdf_document:
+  word_document:
     toc: true
     toc_depth: 4
 lang: Es-es
@@ -12,7 +12,7 @@ lang: Es-es
 
 # Ejercicio 1
 
-Primero, cargamos los datos del documento excel.
+Primero, cargamos los datos del documento excel y renombramos las variables para que sea más cómodo trabajar con ellas.
 ```{r}
 #install.packages("readxl")
 library("readxl")
@@ -29,8 +29,7 @@ names(data1)[5] <- "AD"
 ```{r}
 # Creación del modelo
 lmod = lm(BD ~ WE + SPS + BS + AD, data = data1)
-sum = summary(lmod)
-sum
+summary(lmod) # resumen del modelo
 ```
 
 Como podemos observar mediante la estimación de los coeficientes de regresión, la ecuación quedaría como: BD = 14.95 + 0.91WE + 3.89SPS + 0.65BS - 1.56AD.
@@ -38,7 +37,7 @@ Como podemos observar mediante la estimación de los coeficientes de regresión,
 El modelo obtenido es significativo, con un pvalor global = 6.727e-05. El test estadístico empleado es un F-test, éste testa como H0 que todos los coeficientes de regresión son 0, y como H1 que al menos uno es distinto de 0. 
 
   - H0: $\beta1 = \beta2 =$...$=\beta$p = 0 (donde $\beta1$, $\beta2$, ..., $\beta$p son los coeficientes de regresión de las variables predictoras del modelo)
-  - H1: al menos un $\beta$i es diferente a 0, donde i = 1, 2, ..., p
+  - H1: al menos un $\beta$i $\neq$ i = 1, 2, ..., p
 
 En este caso al menos una de las variables tiene dependencia lineal con la variable respuesta (Beetle Density), ya que el pvalor es menor a 0.05 y por lo tanto, rechazamos la H0. 
 
@@ -53,9 +52,9 @@ confint(lmod, "AD", level = 0.95)
 confint(lmod, "AD", level = 0.9)
 ```
 
-En el intervalo al 90% de confianza no se incluye el 0, es por ello que podemos deducir que el pvalor sea significativo a un nivel de confianza de 0.1, ya que como hemos explicado medimos si el parámetro es distinto a 0. En el caso del intervalo de confianza al 95% sí lo incluye por un margen muy pequeño. 
+En el intervalo de confianza al 90% no se incluye el 0, es por ello que podemos deducir que el pvalor sea significativo a un nivel de confianza de 0.1, ya que como hemos explicado medimos si el parámetro es distinto a 0. En el caso del intervalo de confianza al 95% sí lo incluye por un margen muy pequeño. 
 
-El coeficiente de regresión ($=\beta4$) representa el cambio de la variable respuesta (BD o Beetle Density) por cada unidad que aumenta la variable predictora AD. Si este valor es 0 significa que la variable respuesta no varia conforme cambia el valor de la variable predictora. Si el valor es positivo un incremento de AD supone un incremento de BD, y si el valor es negativo un incremento de AD supone una reducción de BD.
+El coeficiente de regresión ($\beta4$) representa el cambio de la variable respuesta (BD o Beetle Density) por cada unidad que aumenta la variable predictora AD. Si este valor es 0 significa que la variable respuesta no varia conforme cambia el valor de la variable predictora. Si el valor es positivo un incremento de AD supone un incremento de BD, y si el valor es negativo un incremento de AD supone una reducción de BD.
 
 ### (c) Multicolinealidad
 
@@ -64,9 +63,9 @@ library(car)
 vif(lmod)
 ```
 
-El factor de inflación de la varianza o VIF mide cuánto se incrementa la varianza de los coeficientes de regresión estimados a causa de la colinealidad entre las variables predictoras. Valores de 1 indican que no hay correlación, valores de 1 a 5 que hay una ligera o moderada correlación, y valores mayores a 5 que las variables están altamente correlacionadas.
+El factor de inflación de la varianza o VIF mide cuánto se incrementa la varianza de los coeficientes de regresión estimados a causa de la colinealidad entre las variables predictoras. Valores de 1 indican que no hay correlación, valores de 1 a 10 que hay una ligera o moderada correlación, y valores mayores a 10 que las variables están altamente correlacionadas.
 
-En este caso, podemos ver que sobretodo para AD hay una alta correlación y que por lo tanto no nos podemos fiar de la estimación de parámetros y pvalor. 
+En este caso, podemos ver que sobretodo para AD hay una moderada correlación y que por lo tanto habrá que interpretar con cautela la estimación de parámetros y pvalor. 
 
 El umbral del nivel de correlación aceptable entre variables dependerá de cada caso de estudio concreto.
 
@@ -83,14 +82,14 @@ anova(lmod_red, lmod)
 
 O si lo escribimos de forma paramétrica:
 
-- H0: RSS_reducido = RSS_completo
-- H1: RSS_reducido > RSS_completo
+- H0: RSS(modelo reducido) = RSS(modelo completo)
+- H1: RSS(modelo reducido) > RSS(modelo completo)
 
 Cabe destacar que el RSS (Residual Sum of Squares) mide la diferencia entre los valores reales de la variable respuesta y los valores predichos por el modelo. En otras palabras, es una medida de lo bien que se ajusta el modelo a los datos. Mediante la comparación de éste parámetro el F test nos ayuda a determinar si la adición de variables y con ello el aumento de grados de libertad mejoran el ajuste del modelo.
 
 En nuestro caso como el pvalor = 0.35 aceptamos la hipótesis nula, el modelo BD ~ SPS + AD explica igual de bien los datos que el modelo con más variables, al ser más sencillo pero con iguales resultados, lo escogeríamos antes que el modelo más complejo. 
 
-Por otro lado, en el modelo reducido todas las variables explican de manera significa la variable respuesta. Además, el valor de R ajustado es similar en ambos modelos (0.93), este valor indica el porcentaje de la variable respuesta que es explicado por el modelo.
+Por otro lado, en el modelo reducido todas las variables explican de manera significativa la variable respuesta. Además, el valor de R ajustado es similar en ambos modelos (0.93), este valor indica el porcentaje de la variable respuesta que es explicado por el modelo.
 
 ### (e) Gráfico región de confianza
 
@@ -368,6 +367,10 @@ Según el test de Durbin-Watson, hay evidencia de correlación de residuos (pv <
 #### Correlación de variables
 
 ```{r}
+library(car)
+
+vif(lmod_all)
+
 library(ggcorrplot)
 
 # Compute correlation matrix of independent variables
@@ -387,7 +390,7 @@ cor.test(data2$areaS, data2$sexM)
 
 ```
 
-Existe correlación entre las variables sexo y edad. Parece ser que los machos tienen menor edad que las hembras (-0.26), y esta relación es significativa (pv = 0.007). El resto de variables no parecen estar correlacionadas.
+Existe correlación entre las variables sexo y edad. Parece ser que los machos tienen menor edad que las hembras (-0.26), y esta relación es significativa (pv = 0.007). Con el VIF, vemos que la varianza de los factores aumenta mucho a causa de la colinealidad. Como comentamos anteriormente, valores mayores a 10 indican una alta correlación entre las variables, y no nos podríamos fiar de las estimaciones.
 
 #### Media condicional de 0
 
@@ -460,8 +463,6 @@ Cabe destacar que a pesar que el modelo no cumpla todas las asunciones, no signi
 El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten homocedasticidad y normalidad de errores.
 
 Para mejorar el ajuste de los datos existen múltiples opciones. Se puede realizar una regresión beta o regresión de respuesta fraccional. En la regresión beta los valores predichos se encuentran entre 0 y 1 (no incluidos). 
-
-https://raymondltremblay.github.io/ANALITICA/TF7_Regresion_beta.html
 
 Otra aproximación que se puede realizar, es una transformación de los datos. Se pueden realizar ciertas transformaciones (como hacer la raíz cuadrada), para que los datos se alejen de los extremos (0 y 1). Con valores entre 0.2 y 0.8 nuestro modelo no debería llegar a predecir valores fuera del rango entre 0 y 1.
 
@@ -560,7 +561,7 @@ Por otro lado, la adición de interacciones o variables podría ayudar el ajuste
 
 Tal y como comentamos en el apartado 2d, el modelo que proponen en el artículo utiliza la función arcsin(sqrt) para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico. Con esta transformación, los valores medios de proporción (0.3-0.7) siguen una distribución normal, gracias a esto se puede realizar una regresión lineal. 
 
-Se define de la siguiente manera: arcsin(sqrt(x)) = sin^(-1)(√x). La transformación sqrt estabiliza la varianza, haciendo que los valores más extremos (cercanos a 0 y 1), se desplacen hacia el centro, ayudando así a que caigan en la zona de máxima linealidad.
+Se define de la siguiente manera: arcsin(sqrt(x)) = sin^(-1)($\sqrt{x}$). La transformación sqrt estabiliza la varianza, haciendo que los valores más extremos (cercanos a 0 y 1), se desplacen hacia el centro, ayudando así a que caigan en la zona de máxima linealidad.
 
 ![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_YHMpOEbHLE.png){width=60%}
 
