@@ -106,8 +106,8 @@ abline(h=confint(lmod_red)[3,],lty=2,col=2)
 
 El origen de coordenadas nos indica el resultado del test de Wald bajo las siguientes hipótesis:
 
-- H0: $\beta1 = \beta2 = 0$. Los coeficientes de ambas variables son 0
-- H1: $\beta1\neq0$ y/o $\beta2\neq0$. Caso contrario, al menos uno de los coeficientes es 0
+- H0: $\beta1 = \beta2 = 0$. Los coeficientes de ambas variables son 0.
+- H1: $\beta1\neq0$ y/o $\beta2\neq0$. Caso contrario, al menos uno de los coeficientes no es 0.
 
 Si la elipse de confianza no incluye el (0,0), esto sugiere que los coeficientes son distintos a 0 de forma estadísticamente significativa. Esto sugiere que las variables predictoras usadas para construir la elipse, tienen un efecto sobre la variable respuesta. Por otro lado, si no se incluye, indica que los coeficientes estimados no son distintos que 0 y que por lo tanto las variables predictoras no aportan al modelo. Esto no es necesariamente cierto, ya que existen múltiples motivos por los cuales la elipse incluiría el (0,0), como por ejemplo, que el modelo no sea lineal, y por lo tanto no veamos relación.
 
@@ -304,13 +304,13 @@ data2 = cbind(data2, dummy_sex)
 data2 = cbind(data2, dummy_area)
 
 # Add quadratic terms for age, sex, and area to lmod_all
-lmod_quad <- lm(prop.black ~ age + I(age^2) + dummy_sex[, 2] + I(dummy_sex[, 2]^2) + dummy_area[, 2] + I(dummy_area[, 2]^2), data = data2)
+lmod_quad = lm(prop.black ~ age * (dummy_sex + dummy_area) + I(age^2) * (I(dummy_sex^2) + I(dummy_area^2)), data = data2)
 
 # Perform an F-test to compare lmod_all and lmod_quad
 anova(lmod_all, lmod_quad)
 ```
 
-Observando el gráfico, vemos que no se acaba de cumplir linealidad. Es normal en modelos cuya variable dependiente es una proporción que sigan un patrón sigmoideo, tal y como observamos en el gráfico. Para acabar de testear linealidad, creamos un modelo añadiendo las variables cuadráticos y realizamos una comparación entre modelos. Como el pvalor de la anova es significativo (pv<0.05), determinamos que la transformación cuadrática mejora el modelo, y por tanto hay evidencia de no-linealidad.
+Observando el gráfico, vemos que no se acaba de cumplir linealidad. Es normal en modelos cuya variable dependiente es una proporción que sigan un patrón sigmoideo. Para acabar de testear linealidad, creamos un modelo añadiendo las variables cuadráticas y realizamos una comparación entre modelos. Como el pvalor de la anova es significativo (pv<0.05), determinamos que la transformación cuadrática mejora el modelo, y por tanto hay evidencia de no-linealidad.
 
 Nota: Al tener variables factoriales (área y sexo) hemos realizado un previo dummy coding a la generación del modelo cuadrático.  
 
@@ -324,7 +324,7 @@ qqline(resid(lmod_all))
 shapiro.test(resid(lmod_all))
 ```
 
-Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.7) y en el gráfico los valores siguen que manera casi perfecta la línea recta.
+Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.83) y en el gráfico los valores siguen que manera bastante ajustada la recta.
 
 #### Homocedasticidad
 
@@ -340,11 +340,11 @@ bptest(lmod_all)
 summary(lm(sqrt(abs(residuals(lmod_all))) ~ fitted(lmod_all)))
 ```
 
-Parece ser que el modelo no cumple homocedasticidad. En el gráfico podemos ver como los valores no acaban de tener una forma rectangular, ya que aumenta su dispersión a medida que aumenta el valor ajustado, dando una ligera forma de cono.
+Parece ser que el modelo cumple homocedasticidad. En el gráfico podemos ver como los valores tienen una forma bastante rectangular, y casi no aumenta su dispersión a medida que aumenta el valor ajustado, aunque sí lo hace ligeramente dando una ligera forma de cono.
 
-Por otro lado el test de Breusch-Pagan también nos indica que hay heterocedasticidad, ya que con pv = 0.01 aceptamos la hipótesis alternativa: la varianza de los residuos no es constante.
+De manera similar, el test de Breusch-Pagan nos indica que hay homocedasticidad, ya que con pv = 0.06 aceptamos la hipótesis nula: la varianza de los residuos es constante.
 
-Adicionalmente, en el resumen del modelo ajustado a la raíz cuadrada de los residuos absolutos, observamos un pvalor significativo (pv = 0.01). Esto sugiere que su relación no es aleatoria, y por lo tanto, el modelo original viola homocedasticidad.
+Por otro lado, en el resumen del modelo ajustado a la raíz cuadrada de los residuos absolutos, observamos un pvalor significativo (pv = 0.01). Esto sugiere que su relación no es aleatoria, y por lo tanto, el modelo original viola homocedasticidad. Esta discrepancia puede deberse a múltiples motivos, ya que el test de Breush-Pagan hace ciertas asunciones como que los errores están normalmente distribuidos y tienen varianza constante.
 
 #### Independencia de errores
 
@@ -397,7 +397,7 @@ summary(lmod_all)
 ```
 
 Podemos ver que el pvalor del intercepto no es significativo, y por tanto aceptamos la hipótesis nula de que la media condicional de los errores es 0. 
-Es importante que la media condicional sea 0, ya que si no el modelo sobreestimaría o subestimaría los valores reales de la población, llevando así a predicciones sesgados. 
+Es importante que la media condicional sea 0, ya que si no el modelo sobreestimaría o subestimaría los valores reales de la población, llevando así a predicciones sesgadas. 
 
 #### Observaciones inusuales
 
@@ -425,9 +425,9 @@ cook = cooks.distance(lmod_all)
 halfnorm(cook, ylab="Cook's distances")
 ```
 
-En estadística, un punto influyente es un punto que tiene un gran efecto en la estimación de los coeficientes de regresión de un modelo. Vemos que en este estudio existen múltiples puntos influyentes con valores atípicos de las variables dependientes (90, 93, 30...). Si usamos la regla general de 2p/n (siendo p el número de variables independientes del modelo y n el tamaño muestral), obtenemos 25 puntos Mirando el gráfico Half-normal de hatvalues, podemos ver que efectivamente son 25 los puntos que se desvían de la recta principal.Un número tan elevado de puntos influyentes puede significar que el modelo no se ajusta bien a los datos.
+En estadística, un punto influyente es un punto que tiene un gran efecto en la estimación de los coeficientes de regresión de un modelo. Vemos que en este estudio existen múltiples puntos influyentes con valores atípicos de las variables dependientes (90, 93, 30...). Si usamos la regla general de 2p/n (siendo p el número de variables independientes del modelo y n el tamaño muestral), obtenemos 11 puntos influyentes. Mirando el gráfico Half-normal de hatvalues, podemos ver que efectivamente son aproximadamente 11 los puntos que se desvían de la recta principal.
 
-Por otro lado, calculamos la distancia de cook para cada uno de los puntos. Mientras que el hatvalue mide cuán desviado está un punto del centro de los datos en cuanto a variables dependientes, la distancia de cook mide el efecto que tendría eliminar el punto en el modelo. En este nuevo gráfico, no parece que los 25 puntos influyentes influyan por igua al modelo, son aproximadamente 10 los que más influyen.
+Por otro lado, calculamos la distancia de cook para cada uno de los puntos. Mientras que el hatvalue mide cuán desviado está un punto del centro de los datos en cuanto a variables dependientes, la distancia de cook mide el efecto que tendría eliminar el punto en el modelo. En este nuevo gráfico, parece son 13 los puntos más influyentes.
 
 ```{r}
 # Outliers
@@ -451,27 +451,116 @@ En estadística, un outlier es un punto significativamente distinto al resto. En
 
 #### Conclusión
 
+A pesar que nuestro modelo cumple con muchas de las características, no podemos afirmar que sea un buen modelo. El motivo principal es la falta de linealidad. No podemos ajustar un buen modelo lineal a variables que no tienen una relación lineal. Sería adecuado realizar algún tipo de transformación para poder ajustar un modelo lineal, o bien ajustar un modelo no-lineal.
+
+Cabe destacar que a pesar que el modelo no cumpla todas las asunciones, no significa que no nos proporcione información útil y buenas predicciones, pero es extremadamente importante interpretar los resultados con cautela y tener en mente las limitaciones del modelo.
+
 ### (b) Variable respuesta proporción
 
-El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten heterocedasticidad y normalidad de errores.
+El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten homocedasticidad y normalidad de errores.
 
 Para mejorar el ajuste de los datos existen múltiples opciones. Se puede realizar una regresión beta o regresión de respuesta fraccional. En la regresión beta los valores predichos se encuentran entre 0 y 1 (no incluidos). 
 
 https://raymondltremblay.github.io/ANALITICA/TF7_Regresion_beta.html
 
-Otra aproximación que se puede realizar, es una transformación de los datos. Se pueden realizar ciertas transformaciones (como hacer la raíz cuadrada), para que los datos se alejen de los extremos (0 y 1). Con valores entre 0.2 y 0.8 nuestro modelo no llegará a predecir valores fuera del rango entre 0 y 1.
+Otra aproximación que se puede realizar, es una transformación de los datos. Se pueden realizar ciertas transformaciones (como hacer la raíz cuadrada), para que los datos se alejen de los extremos (0 y 1). Con valores entre 0.2 y 0.8 nuestro modelo no debería llegar a predecir valores fuera del rango entre 0 y 1.
 
 En este caso en particular, se puede aplicar esta transformación aplicando la raíz cuadrada. Por otro lado, se podría medir la cantidad de negro en la nariz de los leones por milímetro cuadrado, y así esta variable dejaría de ser una proporción y no presentaría estos problemas. 
 
-### (c) Transformación de la variable
+### (c) Transformación de la variable dependiente
 
-### (d) Ajuste modelo transformado
+Dado que la variable respuesta es una proporción, y no acaba de ajustarse a una relación lineal, realizaremos una transformación arcsin(sqrt) a la variable respuesta. He escogido esta transformación antes que la logit, porque la transformación logit se suele usar en casos donde la proporción representa un resultado binario (ej: proporción de leones con nariz negra). Mientras que arcsin se suele usar para representar una variable continua (ej: proporción negra de la nariz).
+
+```{r}
+# Comprobamos que los datos están entre 0 y 1, si no no podemos aplicar la transformación
+min(data2$prop.black)
+max(data2$prop.black)
+# Aplicamos la transformación
+prop.black.transformed = asin(sqrt(data2$prop.black))
+# Rehacemos el modelo
+lmod_all_transformed = lm(prop.black.transformed ~ age * (sex + area), data = data2)
+
+summary(lmod_all_transformed)
+
+library(knitr)
+
+# Calculate the goodness-of-fit metrics
+library(broom) # Usaremos la función augment para calcular los residuos (diferencia entre valores predichos y valores observados)
+
+R = summary(lmod_all)$r.squared
+Rad = summary(lmod_all)$adj.r.squared
+rmse = sqrt(mean(augment(lmod_all)$.resid^2))
+aic = AIC(lmod_all)
+R_t = summary(lmod_all_transformed)$r.squared
+Rad_t = summary(lmod_all_transformed)$adj.r.squared
+rmse_t = sqrt(mean(augment(lmod_all_transformed)$.resid^2))
+aic_t = AIC(lmod_all_transformed)
+
+# Create table
+metrics_df <- bind_rows(
+    augment(lmod_all) %>% summarise(Modelo = "Sin transformar", R_squared = R, Adj_R_squared = Rad, rmse = rmse, AIC = aic),
+    augment(lmod_all_transformed) %>% summarise(Modelo = "Arcsin(sqrt)", R_squared = R_t, Adj_R_squared = Rad_t, rmse = rmse_t, AIC = aic_t)
+)
+
+# Print the table
+kable(metrics_df, format = "markdown")
+```
+
+En cuanto a significación del modelo no vemos ninguna diferencia. Ambos cuentan con un pvalor significativo. En cuanto a la R, ésta indica el porcentaje de variabilidad de la varianle dependiente que es explicado por el modelo. En ambos casos es 0.77, este resultado implica que aproximadamente un 77% de la proporción de negro en las narices de los leones es explicada por las variables y modelo usado. Es un poco pobre, ya que hay un 23% de variabilidad que no podemos explicar.
+
+El rmse o error cuadrático medio calcula la cantidad de error entre los valores predichos por el modelo y los valores reales observados. Por lo tanto, cuanto menor sea este error, mejor predice nuestro modelo los datos usados. En este caso, parece que el modelo sin transformar predice ligeramente mejor los datos. 
+
+El AIC es una medida de la calidad relativa del modelo. Permite comparar modelos teniendo en cuenta su complejidad. Nuevamente, valores menores de AIC indican mejor ajuste, de manera que el modelo sin transformar se ajusta mejor a los datos que el transformado.
+
+Tras estudiar estos parámetros, concluimos que el modelo sin transformar es mejor, puesto que es el más sencillo y se ajusta igual de bien o mejor que el modelo transformado.
+
+### (d) Diagnóstico rápido
+
+Puesto que nuestra principal preocupación era la no-relación lineal entre las variables independientes y la dependiente, vale la pena estudiar si ésta ha mejorado.
+
+```{r}
+# Load required packages
+library(ggplot2)
+
+# Residuals vs. Fitted plot
+plot(lmod_all_transformed, which = 1)
+
+# Add quadratic terms for age, sex, and area to lmod_all
+lmod_quad_transformed = lm(prop.black.transformed ~ age * (dummy_sex + dummy_area) + I(age^2) * (I(dummy_sex^2) + I(dummy_area^2)), data = data2)
+
+# Perform an F-test to compare lmod_all and lmod_quad
+anova(lmod_all_transformed, lmod_quad_transformed)
+
+# Normalidad
+# Normality of residuals
+qqnorm(resid(lmod_all_transformed))
+qqline(resid(lmod_all_transformed))
+# H0: follows normality H1: does not follow normality
+shapiro.test(resid(lmod_all_transformed))
+
+# Homocedasticidad
+# Scale-Location plot
+plot(lmod_all_transformed, which = 3)
+
+# Load required package
+library(lmtest)
+# Perform Breusch-Pagan test
+bptest(lmod_all_transformed)
+
+summary(lm(sqrt(abs(residuals(lmod_all_transformed))) ~ fitted(lmod_all_transformed)))
+```
+
+Parece ser que no ha mejorado la linealidad a pesar de la transformación. Sí ha mejorado la normalidad (como podemos ver en el QQ-plot, ya que se ajusta mejor a la línea recta), aunque en el modelo sin transformar ya se seguía normalidad. En cuanto a la homocedasticidad, aunque ahora el test de Breusch-Pagan indica heterocedasticidad, en el modelo de regresión sobre los residuos podemos ver que sí ha mejorado la heterocedasticidad, ya que ahora el pvalor no es significativo.
+
+A pesar de las mejoras en normalidad y homocedasticidad, seguimos insatisfechos con el modelo ajustado, ya que sigue sin cumplir linealidad. 
+
+Por otro lado, la adición de interacciones o variables podría ayudar el ajuste del modelo, pero también aportaría complejidad y dificultad a la hora de analizar los resultados. Realizar un pre-procesamiento adicional de los datos también sería posible, como una estandarización o una transformación distinta de la variable dependiente, ya que arcsin(sqrt) no ha funcionado. Si esto falla, deberíamos considerar usar otro tipo de regresión. Si la relación entre las variables independientes y la variable dependiente no es lineal, debemos considerar realizar otro tipo de regresión como la logística. 
 
 ### (e) Discusión uso arcsin
 
 Tal y como comentamos en el apartado 2d, el modelo que proponen en el artículo utiliza la función arcsin(sqrt) para transformar la proporción de negro en la nariz, y hacerla más simétrica y adecuada para el estudio estadístico. Con esta transformación, los valores medios de proporción (0.3-0.7) siguen una distribución normal, gracias a esto se puede realizar una regresión lineal. 
 
-Se define de la siguiente manera: arcsin(x) = sin^(-1)(x). La transformación sqrt hace que los valores más extremos (cercanos a 0 y 1), se desplacen hacia el centro, ayudando así a que caigan en la zona de máxima linealidad.
+Se define de la siguiente manera: arcsin(sqrt(x)) = sin^(-1)(√x). La transformación sqrt estabiliza la varianza, haciendo que los valores más extremos (cercanos a 0 y 1), se desplacen hacia el centro, ayudando así a que caigan en la zona de máxima linealidad.
 
 ![](C:\Users\Arialux\Documents\ShareX\Screenshots\2023-05\firefox_YHMpOEbHLE.png){width=60%}
 
