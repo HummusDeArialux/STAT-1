@@ -174,10 +174,12 @@ p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(
   scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1)) +
   scale_fill_discrete(breaks=c('F', 'M')) +
   theme_classic() +
-  theme(aspect.ratio = 0.5, legend.position = c(0.75, 0.3))
+  theme(aspect.ratio = 0.5, legend.position = c(0.8, 0.4))
 ```
 
 ### (b) Modelos según área
+
+El objetivo inicial del artículo es comparar los niveles de los factores de interés área y sexo, en presencia de la variable edad, pero sin ser la edad de interés en el estudio. Es por ello que la edad es una variable concomitante, y se incluye en el modelo como predictor por su potencial influencia con el resto de variables.
 
 ```{r}
 lmod_all = lm(prop.black ~ age * (sex + area), data = data2)
@@ -192,7 +194,7 @@ summary(lmod_S)
 
 ```
 
-En el modelo con todas las variable, podemos observar que el sexo no influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.93.
+En el modelo con todas las variables, podemos observar que el sexo no influye significativamente sobre la variable respuesta (proporción de negro en la nariz), con un pvalor = 0.93.
 
 Al separar por área, seguimos obteniendo que el sexo no influye de forma significativa para ninguna de las dos áreas, al menos para un nivel de significación del 0.05. Si tomamos un nivel de 0.1, entonces en ambos el sexo pasa a ser significativo. En la población Ngorongoro los machos tienen la nariz más oscura que las hembras (coef sexM = 0.35), mientras que en los Serengeti los machos tienen la nariz más clara (coef sexM = -0.13). 
 
@@ -275,7 +277,7 @@ Se o standard error es una medida de la variabilidad de los errores de predicci�
 
 # Ejercicio 3
 
-### (a) Gauss-Markov y condiciones del modelo re regresión
+### (a) Gauss-Markov y condiciones del modelo de regresión
 
 Las hipótesis de Gauss-Markov son:
 
@@ -323,7 +325,7 @@ qqline(resid(lmod_all))
 shapiro.test(resid(lmod_all))
 ```
 
-Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.83) y en el gráfico los valores siguen que manera bastante ajustada la recta.
+Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.83) y en el gráfico los valores siguen de manera bastante ajustada la recta.
 
 #### Homocedasticidad
 
@@ -460,13 +462,13 @@ Cabe destacar que a pesar que el modelo no cumpla todas las asunciones, no signi
 
 ### (b) Variable respuesta proporción
 
-El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). Es común también que este tipo de modelos con proporciones no presenten homocedasticidad y normalidad de errores.
+El mayor problema que conlleva el hecho de que la variable dependiente sea una proporción, es que nuestro modelo podría predecir valores que no son posibles (por debajo de 0 o encima de 1). Adicionalmente, las relaciones de estas proporciones no siguen una linea recta, si no una sigmoidal (con forma de "S"). También es común también que este tipo de modelos con proporciones no presenten homocedasticidad y normalidad de errores.
 
 Para mejorar el ajuste de los datos existen múltiples opciones. Se puede realizar una regresión beta o regresión de respuesta fraccional. En la regresión beta los valores predichos se encuentran entre 0 y 1 (no incluidos). 
 
 Otra aproximación que se puede realizar, es una transformación de los datos. Se pueden realizar ciertas transformaciones (como hacer la raíz cuadrada), para que los datos se alejen de los extremos (0 y 1). Con valores entre 0.2 y 0.8 nuestro modelo no debería llegar a predecir valores fuera del rango entre 0 y 1.
 
-En este caso en particular, se puede aplicar esta transformación aplicando la raíz cuadrada. Por otro lado, se podría medir la cantidad de negro en la nariz de los leones por milímetro cuadrado, y así esta variable dejaría de ser una proporción y no presentaría estos problemas. 
+En este caso en particular, se puede aplicar esta transformación aplicando la raíz cuadrada. Por otro lado, se podría medir la cantidad de negro en la nariz de los leones por milímetro cuadrado, y así esta variable dejaría de ser una proporción y no presentaría estos problemas, aunque seguramente entonces habría que tener en cuenta el tamaño del león. 
 
 ### (c) Transformación de la variable dependiente
 
