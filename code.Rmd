@@ -16,7 +16,8 @@ Primero, cargamos los datos del documento excel y renombramos las variables para
 ```{r}
 #install.packages("readxl")
 library("readxl")
-data1 = read_excel("cicindela.xlsx")
+data1 = read_excel("cicindela.xlsx") # Cargamos los datos del excel
+# Renombramos variables
 names(data1)[1] <- "BD"
 names(data1)[2] <- "WE"
 names(data1)[3] <- "SPS"
@@ -60,7 +61,7 @@ El coeficiente de regresión ($\beta4$) representa el cambio de la variable resp
 
 ```{r}
 library(car)
-vif(lmod)
+vif(lmod) # Calculamos el VIF
 ```
 
 El factor de inflación de la varianza o VIF mide cuánto se incrementa la varianza de los coeficientes de regresión estimados a causa de la colinealidad entre las variables predictoras. Valores de 1 indican que no hay correlación, valores de 1 a 10 que hay una ligera o moderada correlación, y valores mayores a 10 que las variables están altamente correlacionadas.
@@ -72,9 +73,9 @@ El umbral del nivel de correlación aceptable entre variables dependerá de cada
 ### (d) Modelo reducido
 
 ```{r}
-lmod_red= lm(BD ~ SPS + AD, data = data1)
-summary(lmod_red)
-anova(lmod_red, lmod)
+lmod_red= lm(BD ~ SPS + AD, data = data1) # Ajustamos el modelo reducido
+summary(lmod_red) # Lo examinamos
+anova(lmod_red, lmod) # Comparamos el reducido y el completo con una anova
 ```
 
 - H0: El modelo reducido es igual de bueno que el modelo con más variables. 
@@ -98,7 +99,7 @@ Por otro lado, en el modelo reducido todas las variables explican de manera sign
 library(ellipse)
 plot(ellipse(lmod_red, 2:3),type="l", xlim = c(-1, 8), ylim = c(-4, 1))
 points(coef(lmod_red)[2], coef(lmod_red)[3], pch=19)
-points(x=0, y=0, pch=19, col="blue")
+points(x=0, y=0, pch=19, col="blue") # Añadimos el 0,0
 abline(v=confint(lmod_red)[2,],lty=2,col=2)
 abline(h=confint(lmod_red)[3,],lty=2,col=2)
 ```
@@ -115,33 +116,30 @@ En este caso al no incluirlo, podemos deducir que las variables SPS y AD sí exp
 ### (f) Predicción 
 
 ```{r}
-new_ob = data.frame(SPS = 5, AD = 11)
+new_ob = data.frame(SPS = 5, AD = 11) # Guardamos la observación
 #install.packages('regclass')
 library(regclass)
-extrapolation_check(lmod_red,new_ob)
+extrapolation_check(lmod_red,new_ob) # Miramos si es extrapolación
 # Alternativamente
-range_SPS = range(data1$SPS)
-range_AD = range(data1$AD)
+range_SPS = range(data1$SPS) # Rango de SPS
+range_AD = range(data1$AD) # Rango de AD
 cat("Min AD:", range_AD[1], " Max AD:", range_AD[2], " Observed value:", new_ob$AD)
 cat("\n")
 cat("Min SPS:", range_SPS[1], " Max SPS:", range_SPS[2], " Observed value:", new_ob$SPS)
 ```
 
 ```{r}
-# create a scatter plot of SPS and AD
-plot(SPS ~ AD, data = data1)
+plot(SPS ~ AD, data = data1) # Scatter plot de SPS y AD
 
-# add the observed values as points on the plot
-points(x = 11, y = 5, col = "red", pch = 19)
+points(x = 11, y = 5, col = "red", pch = 19) # Añadimos la observación como punto
 
-# add a legend to the plot
-legend("topright", legend = c("Observed values"), col = c("red"), pch = 19)
+legend("topright", legend = c("Observed values"), col = c("red"), pch = 19) # Añadimos la leyenda
 ```
 
 En este paquete (regclass) percentiles de aproximadamente 99 pueden implicar extrapolación, en nuestro caso obtenemos un percentil de 25 indicando que seguramente no la haya. Si revisamos el scatterplot podemos ver que estos valores de SPS y AD entran dentro del scope del modelo. Usando la función range también podemos determinarlo, ya que nos indica el mínimo y el máximo de las variables señaladas. Si nuestra observación cae en ese rango no es una extrapolación.
 
 ```{r}
-pred <- predict(lmod_red, new_ob, interval = "confidence", level = 0.95)
+pred <- predict(lmod_red, new_ob, interval = "confidence", level = 0.95) # Calculamos CI de los valores predichos
 cat("Predicted value:", pred[1], "\n")
 cat("95% confidence interval:", pred[2], "-", pred[3])
 ```
@@ -153,15 +151,16 @@ cat("95% confidence interval:", pred[2], "-", pred[3])
 ```{r}
 #install.packages("readxl")
 library("readxl")
-data2 = read.csv("lions.csv")
+data2 = read.csv("lions.csv") # Cargamos los datos
 ```
 
 ```{r}
 library(ggplot2)
 library(dplyr)
 
-p = ggplot(data2, aes(age, prop.black))
+p = ggplot(data2, aes(age, prop.black)) # Creamos la base del plot con los datos
 p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(area == "N", "Ngorongoro", "Serengeti")))) + 
+  # Ajustamos la forma del punto según área y sexo
   scale_shape_manual(name = "", 
                      values = c(1, 19, 2, 17), 
                      labels = data2 %>%
@@ -169,12 +168,11 @@ p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(
                        summarize(n = n()) %>%
                        mutate(label = paste0(ifelse(area == "N", "Ngorongoro", "Serengeti"), " ", ifelse(sex == "M", "males", "females"), "(n = ", n, ")")) %>%
                        pull(label)) +
-  labs(x = "Age (yr)", y = "Proportion black", shape = "") +
-  scale_x_continuous(breaks = seq(0, 16, 2), limits = c(0, 16)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1)) +
-  scale_fill_discrete(breaks=c('F', 'M')) +
-  theme_classic() +
-  theme(aspect.ratio = 0.5, legend.position = c(0.8, 0.4))
+  labs(x = "Age (yr)", y = "Proportion black", shape = "") + # Renombramos los ejes
+  scale_x_continuous(breaks = seq(0, 16, 2), limits = c(0, 16)) + # Ajustamos eje X
+  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1)) + # Ajustamos eje Y
+  theme_classic() + # Tema clásico
+  theme(aspect.ratio = 0.5, legend.position = c(0.8, 0.4)) # Cambiamos el ratio de aspecto y posición de la leyenda
 ```
 
 ### (b) Modelos según área
@@ -182,15 +180,17 @@ p + geom_point(aes(shape = paste(ifelse(sex == "M", "males", "females"), ifelse(
 El objetivo inicial del artículo es comparar los niveles de los factores de interés área y sexo, en presencia de la variable edad, pero sin ser la edad de interés en el estudio. Es por ello que la edad es una variable concomitante, y se incluye en el modelo como predictor por su potencial influencia con el resto de variables.
 
 ```{r}
+# Ajustamos el modelo
 lmod_all = lm(prop.black ~ age * (sex + area), data = data2)
-summary(lmod_all)
+summary(lmod_all) 
 
-data2_split_area = split(data2, f=data2$area)
+data2_split_area = split(data2, f=data2$area) # Separamos los datos por area
 
-lmod_N = lm(prop.black ~ age * sex, data = data2_split_area$N)
-lmod_S = lm(prop.black ~ age * sex, data = data2_split_area$S)
-summary(lmod_N)
-summary(lmod_S)
+# Ajustamos un modelo por cada área
+lmod_N = lm(prop.black ~ age * sex, data = data2_split_area$N) # N
+lmod_S = lm(prop.black ~ age * sex, data = data2_split_area$S) # S
+summary(lmod_N) 
+summary(lmod_S) 
 
 ```
 
@@ -203,26 +203,26 @@ Es importante estudiar la interacción entre la edad y el sexo. En el caso de lo
 ### (c) Modelo leones macho
 
 ```{r}
-data2_split_sex = split(data2, f = data2$sex)
-lmod_male = lm(prop.black ~ age * area, data = data2_split_sex$M)
-summary(lmod_male)
+data2_split_sex = split(data2, f = data2$sex) # Separamos los datos por sexo
+lmod_male = lm(prop.black ~ age * area, data = data2_split_sex$M) # Ajustamos el modelo para machos
+summary(lmod_male) # Lo examinamos
 ```
 
 Para los machos, no existen diferencias significativas según el área (pv = 0.49). Similarmente al apartado anterior, sí existe significación en la interacción de la edad y el área (pv = 0.03). Esto quiere decir, que según la edad del león sí encontraremos diferencias por área. En específico, los machos Serengeti tienen la nariz más oscura que los Ngorongoro (coef age:areaS = 0.04). Podemos ver este efecto más claramente en el siguiente gráfico. Para un león de 2 años no existen diferencias según el área, pero para un león de 8 años sí lo hay, siendo más oscura la de los Serengeti (mayor proporción de negro).
 
 ```{r}
-# Create a sequence of ages to use for plotting
+# Creamos una secuencia de edades
 age_seq <- seq(min(data2_split_sex$M$age), max(data2_split_sex$M$age), length.out = 100)
 
-# Predict proportion black for each area at each age
-pred_N <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "N"))
-pred_S <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "S"))
+# Calculamos los valores predichos
+pred_N <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "N")) # Para N
+pred_S <- predict(lmod_male, newdata = data.frame(age = age_seq, area = "S")) # Para S
 
-# Plot regression lines for each area
-plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black")
-lines(age_seq, pred_N, col = "red")
-lines(age_seq, pred_S, col = "blue")
-legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1)
+# Dibujamos las líneas de regresión para cada área
+plot(data2_split_sex$M$age, data2_split_sex$M$prop.black, xlab = "Age", ylab = "Proportion Black") # Plot con los datos
+lines(age_seq, pred_N, col = "red") # Línea N
+lines(age_seq, pred_S, col = "blue") # Línea S
+legend("bottomright", legend = c("Ngorongoro", "Serengeti"), col = c("red", "blue"), lty = 1) # Leyenda
 ```
 
 ### (d) Predicción de la edad de una leona
@@ -234,28 +234,27 @@ El modelo que proponen en el artículo, utilizan la función arcsin(sqrt) para t
 ```{r}
 library(stats)
 
-# Aplicamos la transformación sólo a 
+# Aplicamos la transformación sólo a hembras
 data2_split_sex$F$prop.black.transformed = asin(sqrt(data2_split_sex$F$prop.black))
 
+# Ajustamos el modelo
 lmod_age = lm(age ~ prop.black.transformed, data = data2_split_sex$F)
 
-# Compute the predicted age on the transformed scale
-
-# Define the proportion black for which to make the prediction
+# Transformamos la proporción sobre la que haremos la predicción
 prop_black = 0.5
 prop_black_transformed <- asin(sqrt(prop_black))
 
-# Compute the predicted age and confidence intervals
-predicted_age <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed))
-ci_95 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.95)
-ci_75 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.75)
-ci_50 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.50)
+# Calculamos los parámetros
+predicted_age <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed)) # Edad predicha
+ci_95 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.95) # PI predicho al 95%
+ci_75 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.75) # PI predicho al 75%
+ci_50 <- predict(lmod_age, newdata = data.frame(prop.black.transformed = prop_black_transformed), interval = "prediction", level = 0.50) # PI predicho al 50%
 
-# Compute se
+# Calculamos se
 summary_lmod_age <- summary(lmod_age)
 se_predicted_age <- summary_lmod_age$sigma * sqrt(1 + 1/nrow(data2_split_sex$F) + (prop_black_transformed - mean(data2_split_sex$F$prop.black.transformed))^2/var(data2_split_sex$F$prop.black.transformed))
 
-# Create a data frame with the predicted age and confidence intervals
+# Creamos la tabla con los resultados
 result_table <- data.frame("Proportion black" = prop_black, 
                            "Estimated age in years" =paste(round(predicted_age,2), "(", round(se_predicted_age,2), ")"),
                            "95% CI" = paste(round(ci_95[2],2), round(ci_95[3],2), sep = "-"),
@@ -264,11 +263,11 @@ result_table <- data.frame("Proportion black" = prop_black,
 
 library(knitr)
 
-new_names = c("Proportion black", "Estimated age in years (s.e.)", "95% p.i.", "75% p.i.", "50% p.i.")
+new_names = c("Proportion black", "Estimated age in years (s.e.)", "95% p.i.", "75% p.i.", "50% p.i.") # Nombramos los títulos
 
 names(result_table) <- new_names
 
-# Create a table using the kable function from the knitr package
+# Knit la tabla
 kable(result_table, format = "markdown")
 
 ```
@@ -291,23 +290,23 @@ Las hipótesis de Gauss-Markov son:
 #### Linealidad
 
 ```{r}
-# Load required packages
 library(ggplot2)
 
 # Residuals vs. Fitted plot
 plot(lmod_all, which = 1)
 
-# Create dummy variables for sex and area
+# Creamos nuevas variables dummy coded
 dummy_sex <- model.matrix(~ sex, data = data2)
 dummy_area <- model.matrix(~ area, data = data2)
 
+# Las añadimos al dataframe original
 data2 = cbind(data2, dummy_sex)
 data2 = cbind(data2, dummy_area)
 
-# Add quadratic terms for age, sex, and area to lmod_all
+# Añadimos terminos cuadraticos para age, sex, y area al modelo
 lmod_quad = lm(prop.black ~ age * (dummy_sex + dummy_area) + I(age^2) * (I(dummy_sex^2) + I(dummy_area^2)), data = data2)
 
-# Perform an F-test to compare lmod_all and lmod_quad
+# Hacemos una nova para compararlos
 anova(lmod_all, lmod_quad)
 ```
 
@@ -318,11 +317,11 @@ Nota: Al tener variables factoriales (área y sexo) hemos realizado un previo du
 #### Normalidad
 
 ```{r}
-# Normality of residuals
+# Normalidad de residuos
 qqnorm(resid(lmod_all))
 qqline(resid(lmod_all))
-# H0: follows normality H1: does not follow normality
-shapiro.test(resid(lmod_all))
+# H0: sigue normalidad H1: no sigue normalidad
+shapiro.test(resid(lmod_all)) # Aplicamos el test de Shapiro
 ```
 
 Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una distribución normal. Podemos estar seguros porque aceptamos la hipótesis nula del test (pv = 0.83) y en el gráfico los valores siguen de manera bastante ajustada la recta.
@@ -333,11 +332,11 @@ Tanto el test de Shapiro como el qqplot nos indican que los residuos siguen una 
 # Scale-Location plot
 plot(lmod_all, which = 3)
 
-# Load required package
 library(lmtest)
-# Perform Breusch-Pagan test
+# Hacemos el Breusch-Pagan test
 bptest(lmod_all)
 
+# Modelo de regresión sobre los residuos
 summary(lm(sqrt(abs(residuals(lmod_all))) ~ fitted(lmod_all)))
 ```
 
@@ -350,17 +349,14 @@ Por otro lado, en el resumen del modelo ajustado a la raíz cuadrada de los resi
 #### Independencia de errores
 
 ```{r}
-# Load the lmtest package
 library(lmtest)
 
-# Perform the Durbin-Watson test on lmod_all
+# Hacemos el Durbin-Watson test al modelo
 #H0: No hay autocorrelación H1: Hay correlación
 dwtest(lmod_all)
 
-# Load the graphics package
 library(graphics)
-
-# Create a lag plot of the residuals from lmod_all
+# Creamos un lag plot de los residuos del modelo
 lag.plot(resid(lmod_all))
 ```
 
@@ -371,23 +367,23 @@ Según el test de Durbin-Watson, hay evidencia de correlación de residuos (pv <
 ```{r}
 library(car)
 
-vif(lmod_all)
+vif(lmod_all) # Calculamos los VIF
 
 library(ggcorrplot)
 
-# Compute correlation matrix of independent variables
+# Calculamos la matriz de correlación
 cor_mat <- cor(data2[, c("age", "sexM", "areaS")])
 
-# Create correlation plot
+# Creamos el correlation plot
 ggcorrplot(cor_mat, hc.order = TRUE, type = "lower", lab = TRUE)
 
-# Compute correlation and p-value between age and dummy_sex
+# Calculamos la correlación y p-value entre age y dummy_sex
 cor.test(data2$age, data2$sexM)
 
-# Compute correlation and p-value between age and dummy_area
+# Calculamos la correlación y p-value entre age y dummy_area
 cor.test(data2$age, data2$areaS)
 
-# Compute correlation and p-value between dummy_sex and dummy_area
+# Calculamos la correlación y p-value entre dummy_sex y dummy_area
 cor.test(data2$areaS, data2$sexM)
 
 ```
@@ -397,7 +393,7 @@ Existe correlación entre las variables sexo y edad. Parece ser que los machos t
 #### Media condicional de 0
 
 ```{r}
-# H0: Intercept pv = 0 H1: Distinto de 0
+# H0: Intercepto pv = 0 H1: Distinto de 0
 summary(lmod_all)
 ```
 
@@ -409,23 +405,23 @@ Es importante que la media condicional sea 0, ya que si no el modelo sobreestima
 ```{r}
 # Leverage
 
-# Calculate the threshold based on the rule of thumb
+# Calculamos el threshold o límite
 p <- ncol(model.matrix(lmod_all)) - 1
 n <- nrow(data2)
 threshold <- 2*p/n
 
-# Calculate the number of observations with hat values above the threshold
+# Calculamos el número de observaciones con hatvalue por encima del límite
 hatv <- hatvalues(lmod_all)
 num_outliers <- sum(hatv > threshold)
 
-# Print the number of outliers
-cat("Number of outliers according to hatvalues:", num_outliers)
+# Imprimimos el número de puntos influyentes
+cat("Número de puntos influyentes:", num_outliers)
 
 # Half normal plot with hatvalues
 library(faraway)
 halfnorm(hatv, ylab="Hatvalues")
 
-# Half normal plot with cook's distance
+# Half normal plot con la distancia de Cook
 cook = cooks.distance(lmod_all)
 halfnorm(cook, ylab="Cook's distances")
 ```
@@ -439,11 +435,12 @@ Por otro lado, calculamos la distancia de cook para cada uno de los puntos. Mien
 
 stud = rstudent(lmod_all)
 maxo = stud[which.max(abs(stud))]
-# Calculate Bonferroni critical value
+# Calculamos el Bonferroni critical value
 bonf_crit <- qt(0.05/(2*n), df = lmod_all$df.residual)
 
 cat("\n")
 
+# Miramos si el punto con mayor desviación es un outlier
 if (maxo > abs(bonf_crit)) {
   cat("The point is an outlier")
 } else {
@@ -487,25 +484,27 @@ summary(lmod_all_transformed)
 
 library(knitr)
 
-# Calculate the goodness-of-fit metrics
+# Calculamos los parámetos
 library(broom) # Usaremos la función augment para calcular los residuos (diferencia entre valores predichos y valores observados)
 
-R = summary(lmod_all)$r.squared
-Rad = summary(lmod_all)$adj.r.squared
-rmse = sqrt(mean(augment(lmod_all)$.resid^2))
-aic = AIC(lmod_all)
-R_t = summary(lmod_all_transformed)$r.squared
-Rad_t = summary(lmod_all_transformed)$adj.r.squared
-rmse_t = sqrt(mean(augment(lmod_all_transformed)$.resid^2))
-aic_t = AIC(lmod_all_transformed)
+# Modelo original
+R = summary(lmod_all)$r.squared # R 
+Rad = summary(lmod_all)$adj.r.squared # R ajustada
+rmse = sqrt(mean(augment(lmod_all)$.resid^2)) # RMSE
+aic = AIC(lmod_all) # AIC
+# Modelo transformado
+R_t = summary(lmod_all_transformed)$r.squared # R
+Rad_t = summary(lmod_all_transformed)$adj.r.squared # R ajustada
+rmse_t = sqrt(mean(augment(lmod_all_transformed)$.resid^2)) # RMSE
+aic_t = AIC(lmod_all_transformed) # AIC
 
-# Create table
+# Creamos la tabla
 metrics_df <- bind_rows(
     augment(lmod_all) %>% summarise(Modelo = "Sin transformar", R_squared = R, Adj_R_squared = Rad, rmse = rmse, AIC = aic),
     augment(lmod_all_transformed) %>% summarise(Modelo = "Arcsin(sqrt)", R_squared = R_t, Adj_R_squared = Rad_t, rmse = rmse_t, AIC = aic_t)
 )
 
-# Print the table
+# Imprimimos la tabla
 kable(metrics_df, format = "markdown")
 ```
 
@@ -522,35 +521,32 @@ Tras estudiar estos parámetros, concluimos que el modelo sin transformar es mej
 Puesto que nuestra principal preocupación era la no-relación lineal entre las variables independientes y la dependiente, vale la pena estudiar si ésta ha mejorado.
 
 ```{r}
-# Load required packages
 library(ggplot2)
 
 # Residuals vs. Fitted plot
 plot(lmod_all_transformed, which = 1)
 
-# Add quadratic terms for age, sex, and area to lmod_all
+# Añadimos las variable cuadráticas para age, sex, y area al modelo transformado
 lmod_quad_transformed = lm(prop.black.transformed ~ age * (dummy_sex + dummy_area) + I(age^2) * (I(dummy_sex^2) + I(dummy_area^2)), data = data2)
 
-# Perform an F-test to compare lmod_all and lmod_quad
+# Hacemos una anova para comparar el modelo con y sin variables cuadráticas
 anova(lmod_all_transformed, lmod_quad_transformed)
 
 # Normalidad
-# Normality of residuals
 qqnorm(resid(lmod_all_transformed))
 qqline(resid(lmod_all_transformed))
-# H0: follows normality H1: does not follow normality
-shapiro.test(resid(lmod_all_transformed))
+# H0: sigue normalidad H1: no sigue normalidad
+shapiro.test(resid(lmod_all_transformed)) # Test de Shapiro
 
 # Homocedasticidad
 # Scale-Location plot
 plot(lmod_all_transformed, which = 3)
 
-# Load required package
 library(lmtest)
-# Perform Breusch-Pagan test
+# Breusch-Pagan test
 bptest(lmod_all_transformed)
 
-summary(lm(sqrt(abs(residuals(lmod_all_transformed))) ~ fitted(lmod_all_transformed)))
+summary(lm(sqrt(abs(residuals(lmod_all_transformed))) ~ fitted(lmod_all_transformed))) # Regresión sobre los residuos
 ```
 
 Parece ser que no ha mejorado la linealidad a pesar de la transformación. Sí ha mejorado la normalidad (como podemos ver en el QQ-plot, ya que se ajusta mejor a la línea recta), aunque en el modelo sin transformar ya se seguía normalidad. En cuanto a la homocedasticidad, aunque ahora el test de Breusch-Pagan indica heterocedasticidad, en el modelo de regresión sobre los residuos podemos ver que sí ha mejorado la heterocedasticidad, ya que ahora el pvalor no es significativo.
